@@ -10,13 +10,13 @@ use strict;
 print "This is the recovery code obfuscator.\n";
 print "Please input your codes, as many as you like. When you have no\n";
 print "more codes to enter, leave the entry blank. Spaces are taken out\n";
-print "in any inputs you make.\n";
+print "in any inputs you make, as are dashes.\n";
 
 my @codes;
 while (1) {
     print " Code ".($#codes + 2).": ";
     my $c = <STDIN>;
-    $c =~ s/\s//g;
+    $c =~ s/[\s\-]//g;
     if ($c ne "") {
 	push @codes, $c;
     } else {
@@ -33,6 +33,7 @@ print "Analysing codes...\n";
 my $hasdigits = 0;
 my $hasletters = 0;
 my $hascase = 0;
+my $hashex = 0;
 
 for (my $i = 0; $i <= $#codes; $i++) {
     if ($codes[$i] =~ m/\d/) {
@@ -40,10 +41,23 @@ for (my $i = 0; $i <= $#codes; $i++) {
     }
     if ($codes[$i] =~ m/\D/) {
 	$hasletters = 1;
+	$hashex = 1;
     }
     if ((lc($codes[$i]) ne $codes[$i]) ||
 	(uc($codes[$i]) ne $codes[$i])) {
 	$hascase = 1;
+    }
+    # Check for hex-only letters.
+    if ($codes[$i] =~ m/[g-zG-Z]/) {
+	$hashex = 0;
+    }
+}
+
+if ($hashex == 1) {
+    # We make everything lower case.
+    $hascase = 0;
+    for (my $i = 0; $i <= $#codes; $i++) {
+	$codes[$i] = lc($codes[$i]);
     }
 }
 
@@ -55,6 +69,9 @@ if ($hasletters == 1) {
 	print " Recovery codes contain case-sensitive letters.\n";
     } else {
 	print " Recovery codes contain case-insensitive letters.\n";
+    }
+    if ($hashex == 1) {
+	print "  Recovery codes appear to only contain hexadecimal letters.\n";
     }
 }
 
@@ -100,9 +117,13 @@ print "The obfuscated code requires ".$n_req." random characters.\n";
 my $min_number = 0;
 my $max_number = 9;
 if ($hasletters == 1) {
-    $max_number = 35;
-    if ($hascase == 1) {
-	$max_number = 51;
+    if ($hashex == 0) {
+	$max_number = 35;
+	if ($hascase == 1) {
+	    $max_number = 51;
+	}
+    } else {
+	$max_number = 15;
     }
 }
 if ($hasdigits == 0) {
